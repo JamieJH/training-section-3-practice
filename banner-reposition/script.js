@@ -7,7 +7,7 @@
     const initialPosition = localStorage.getItem("position") || "0,0"
     let zoomLevel = localStorage.getItem("zoom") || 1
 
-    uploadedImage.src = localStorage.getItem("imageSrc") || defaultImageSrc
+    uploadedImage.src = localStorage.getItem("image-source") || defaultImageSrc
     uploadedImage.style.left = initialPosition.split(",")[0] + "px"
     uploadedImage.style.top = initialPosition.split(",")[1] + "px"
     uploadedImage.style.transform = "scale(" + zoomLevel + ")"
@@ -16,14 +16,13 @@
     // Upload File
     const fileInput = document.querySelector('input[type="file"]')
 
-    fileInput.addEventListener("change", (e) => {
-        console.log(e);
-        console.log(e.target.files);
+    fileInput.addEventListener("change", (e) => {        
         if (e.target.files && e.target.files[0]) {
-            e.target.files[0].onload = () => {
-                URL.revokeObjectURL(uploadedImage.src);  // no longer needed, free memory
+            const fileReader = new FileReader()
+            fileReader.onload = () => {
+                uploadedImage.src = fileReader.result
             }
-            uploadedImage.src = URL.createObjectURL(e.target.files[0]); // set src to blob url
+            fileReader.readAsDataURL(e.target.files[0])
         }
     })
 
@@ -36,12 +35,6 @@
     let isMouseDown = false
     let offset = [0, 0]     // x, y
     let mousePos
-
-
-    repositionBtn.addEventListener("click", () => {
-        isEditing = !isEditing
-        repositionBtn.innerHTML = isEditing ? "Cancel" : "Reposition"
-    })
 
     image.addEventListener("mousedown", (e) => {
         isMouseDown = true
@@ -65,12 +58,21 @@
             image.style.top = mousePos[1] + offset[1] + 'px'
         }
     })
+    
+    repositionBtn.addEventListener("click", () => {
+        isEditing = !isEditing
+        repositionBtn.innerHTML = isEditing ? "Cancel" : "Reposition"
+    })
 
     // save current position and zoom status in localstorage when click save
     saveBtn.addEventListener("click", () => {
         localStorage.setItem("position", [image.offsetLeft, image.offsetTop])
         localStorage.setItem("zoom", zoomLevel)
-        localStorage.setItem("imageSrc", uploadedImage.src)
+        localStorage.setItem("image-source", uploadedImage.src)
+
+        // turn off reposition
+        isEditing = false
+        repositionBtn.innerHTML = "Reposition"
     })
 
 
