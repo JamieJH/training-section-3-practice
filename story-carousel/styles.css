@@ -1,0 +1,151 @@
+html, body, p {
+    margin: 0;
+    padding: 0;
+    font-family: 'Trebuchet MS', Arial, sans-serif;
+}
+
+.story-carousel {
+    width: 500px;
+    height: 700px;
+    margin: 50px auto;
+    position: relative;
+    display: none;
+}
+
+.carousel-container {
+    width: 400px;
+    height: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.carousel-track {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transition: all 0.3s ease-in-out;
+}
+
+.carousel-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background-color: #dbdbdb;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 999;
+}
+
+.carousel-button.previous {
+    left: 0;
+}
+
+.carousel-button.next {
+    right: 0;
+    padding-left: 8px;
+}
+
+.carousel-button:hover {
+    background-color: #bebebe;
+}
+
+.progress-bar-container {
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    height: 8px;
+    width: 380px;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 999;
+}
+
+.progress-bar {
+    position: relative;
+    width: 0;
+    height: 100%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 5px;
+    background-color: #cacaca;
+}
+
+.inner-bar {
+    background-color: #808080;
+    transition: all 0.1s ease;
+    border-radius: 5px;
+    width: 0;
+}
+
+
+.user-story__slide {
+    position: absolute;
+}
+
+.user-story__slide-media {
+    height: 700px;
+    width: 400px;
+}
+
+img.user-story__slide-media {
+    object-fit: cover;
+    user-select: none;
+}
+
+button.play, .upload-form button {
+    padding: 8px 20px;
+    color: #ffffff;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+button.play:hover, .upload-form button:hover {
+    opacity: 0.9;
+}
+
+button.play {
+    margin: 50px auto;
+    display: none;
+    background-color: #309ae0;
+    color: #ffffff;
+}
+
+.upload-form {
+    width: 600px;
+    margin: 20px auto;
+}
+
+.upload-form > * {
+    margin: 10px 0;
+}
+
+.upload-form button {
+    display: block;
+    margin: 0 auto;
+    background-color: #28c76f;
+}
+
+.form-input > * {
+    display: inline-block;
+    width: 290px;
+    box-sizing: border-box;
+    vertical-align: middle;
+    padding: 3px 5px;
+}
+
+input[type="file"] {
+    padding: 0;
+}

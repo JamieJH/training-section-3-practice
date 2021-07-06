@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Carousel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" />
+    <link rel="stylesheet" href="styles.css">
+
+</head>
+
+<body>
+
+    <div class="story-carousel">
+        <button class="carousel-button previous hidden">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+
+        <div class="carousel-container">
+            <div class="progress-bar-container"></div>
+            <div class="carousel-track"></div>
+        </div>
+
+        <button class="carousel-button next">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+
+    <form class="upload-form">
+        <div class="form-input">
+            <label for="story-select">Choose user story</label>
+            <select id="story-select"></select>
+        </div>
+
+        <div class="form-input">
+            <label for="story-name">Enter story name (unique)</label>
+            <input type="text" id="story-name" disabled></input>
+        </div>
+
+        <div class="form-input">
+            <label for="upload-file">Upload files <br> (image or video, max 10MB each)</label>
+            <input id="upload-file" type="file" accept="image/*,video/*" multiple>
+        </div>
+
+        <button id="add" type="submit">Add</button>
+
+    </form>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
