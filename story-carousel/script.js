@@ -23,7 +23,7 @@
     let fillProgressBarIntervalId;      // id of setInterval to fill progress bar during SLIDE_INTERVAL
     let currentBarIndex = 0;            // index of the progres bar to be filled
     let currentInnerWidth = 0;          // filled width of the current progress bar
-    let isAutoPlaying = true;           // true is auto play is on
+    let isAutoPlaying = false;           // true is auto play is on
     let timePassed = 0;                 // time passed since the start of slide when user pause auto play
 
     // set up story select input
@@ -57,7 +57,7 @@
         // if this function is called when the story only has 1 slide, create the story container
         if (storyFiles[storyTitle].length === 1) {
             storyContainer = document.createElement("DIV");
-            storyContainer.className = "user-story " + (track.children.length === 0 ? "active" : "")
+            storyContainer.className = "user-story " + (track.children.length === 1 ? "active" : "")
             storyContainer.id = storyTitle
         }
 
@@ -65,7 +65,7 @@
         const slideContainer = document.createElement("DIV")
         // if this is the first ever story and frist ever slide, set the slide to active
         slideContainer.className = "user-story__slide " +
-            ((track.children.length === 0 && storyFiles[storyTitle].length === 1) ? "active" : "");
+            ((track.children.length === 1 && storyFiles[storyTitle].length === 1) ? "active" : "");
 
         let media = ""
         if (slideInfo.type === "image") {
@@ -73,6 +73,7 @@
             media.className = "user-story__slide-media"
             media.setAttribute("alt", slideInfo.name)
             media.setAttribute("src", slideInfo.src)
+            media.setAttribute("draggable", false)
         }
         else {
             media = document.createElement("VIDEO")
@@ -89,7 +90,9 @@
         slideContainer.appendChild(media)
         storyContainer.appendChild(slideContainer)
         if (storyFiles[storyTitle].length === 1) {
-            track.appendChild(storyContainer)
+            const endSlide = document.getElementById("story-end")
+            endSlide.before(storyContainer)
+            // track.insertBefore(storyContainer, storyContainer.childNodes[storyContainer.childNodes.length-1])
         }
     }
 
@@ -110,27 +113,31 @@
 
     // set auto slide after 6s, during this time, update the progress bar
     function startAutoSlide(startWidth = 0) {
-        isAutoPlaying = true
-        const timeLeft = SLIDE_INTERVAL - timePassed
-        fillRunningBar(Array.from(progressBars.children)[currentBarIndex], startWidth)
+        if (!isAutoPlaying) {
+            isAutoPlaying = true
+            const timeLeft = SLIDE_INTERVAL - timePassed
+            fillRunningBar(Array.from(progressBars.children)[currentBarIndex], startWidth)
 
-        if (timeLeft !== SLIDE_INTERVAL) {
-            slideTimeoutId = setTimeout(() => slideUsingButtons(true), timeLeft)
+            if (timeLeft !== SLIDE_INTERVAL) {
+                slideTimeoutId = setTimeout(() => slideUsingButtons(true), timeLeft)
+            }
+            slideIntervalId = setInterval(() => slideUsingButtons(true), 6000)
+
+            // if active slide contain a video, play it
+            toggleVideo(storyCarousel.querySelector(".user-story__slide.active > video"), true)
         }
-        slideIntervalId = setInterval(() => slideUsingButtons(true), 6000)
-
-        // if active slide contain a video, play it
-        toggleVideo(storyCarousel.querySelector(".user-story__slide.active > video"), true)
     }
 
 
     function stopAutoSlide() {
-        isAutoPlaying = false
-        clearInterval(fillProgressBarIntervalId)
-        clearTimeout(slideTimeoutId)
-        clearInterval(slideIntervalId)
-        // if active slide contain a video, pause it
-        toggleVideo(storyCarousel.querySelector(".user-story__slide.active > video"), false)
+        if (isAutoPlaying) {
+            isAutoPlaying = false
+            clearInterval(fillProgressBarIntervalId)
+            clearTimeout(slideTimeoutId)
+            clearInterval(slideIntervalId)
+            // if active slide contain a video, pause it
+            toggleVideo(storyCarousel.querySelector(".user-story__slide.active > video"), false)
+        }
     }
 
     function setUpProgressBars(barCount) {
@@ -168,6 +175,7 @@
 
 
     function moveToSlide(storyContainer, targetSlide, isNext, isSetupBarNecessary = false) {
+        stopAutoSlide()
         const currentStory = storyCarousel.querySelector(".user-story.active")
         // if target slide is not specified, slide to first slide of story
         if (targetSlide === null) {
@@ -191,6 +199,9 @@
         if (isSetupBarNecessary) {
             setUpProgressBars(storyContainer.children.length)
         }
+
+        // hide progress bars for the end black slide
+        progressBars.style.visibility = (storyContainer.id === "story-end") ? 'hidden' : 'visible';
 
         const allBars = Array.from(progressBars.children)
 
@@ -222,7 +233,9 @@
         let targetSlide = isNext ? activeSlide.nextElementSibling : activeSlide.previousElementSibling
         let siblingStory = null
 
-        stopAutoSlide()       // turn off auto slide in case user slide when progress bar was being filled
+        if (isNext) {
+            stopAutoSlide()       // turn off auto slide in case user slide when progress bar was being filled
+        }
 
         // if there's no sibling slide, check for sibling story
         if (!targetSlide) {
@@ -273,15 +286,18 @@
         }
 
         // All inputs are correct
-        let isAllGood = true;   // to check if all input is <= 10MB
-        const enteredStoryTitle = storySelect.value === "new" ? storyName.value.trim().toLowerCase() : storySelect.value
+        let isAllGood = true;   // to check if all input is <= 20MB
+        let enteredStoryTitle = storySelect.value === "new" ? storyName.value.trim().toLowerCase() : storySelect.value
+        // replace any string of white space with a hyphen
+        enteredStoryTitle = enteredStoryTitle.replace(/\s+/g, '-')
+
         if (storySelect.value === "new") {
             storyFiles[enteredStoryTitle] = []        // initialise an array
         }
 
         Array.from(fileInput.files).every(file => {
             // if file size > 5MB
-            if (file.size > 10 * 1000000) {
+            if (file.size > 20 * 1024 * 1024) {
                 alert("Some file size is larger than 10MB");
                 isAllGood = false
                 return false
@@ -310,6 +326,7 @@
     })
 
     track.addEventListener("mousedown", stopAutoSlide)
+    track.addEventListener("mouseleave", () => startAutoSlide(currentInnerWidth))
     track.addEventListener("mouseup", () => startAutoSlide(currentInnerWidth))
     previsouBtn.addEventListener("click", () => slideUsingButtons(false))
     nextBtn.addEventListener("click", () => slideUsingButtons(true))
