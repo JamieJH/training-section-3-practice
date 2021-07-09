@@ -2,6 +2,7 @@
     const DEFAULT_IMAGE_SOURCE = "https://cdn.wallpapersafari.com/28/71/L4NmYV.png"
     const ZOOM_MAX = 4
     let zoom_min = 1
+    let zoomLevel = zoom_min;
     const image = document.getElementById("uploaded-img")
     const zoomInBtn = document.getElementById("zoom-in")
     const zoomOutBtn = document.getElementById("zoom-out")
@@ -19,6 +20,7 @@
     // set initial img, zoom level and position taken from local storage (if available)
     const initialPosition = localStorage.getItem("position") || "0,0"
     function zoom(level, isZoomOut = false) {
+        console.log(level);
         if (isEditing) {
             if (level >= zoom_min && level <= ZOOM_MAX) {
                 const oldWidth = image.clientWidth
@@ -49,6 +51,7 @@
     function initialZoom(level) {
         console.log(level);
         zoom_min = level
+        zoomLevel = zoom_min
         image.style.width = (100 * level) + "%"
     }
 
@@ -56,7 +59,6 @@
     image.style.width = "100%"
     image.style.left = initialPosition.split(",")[0] + "px"
     image.style.top = initialPosition.split(",")[1] + "px"
-    let zoomLevel = 1;
     setTimeout(() => {
         const heightPortion = bannerContainer.clientHeight / image.clientHeight
         zoomLevel = parseFloat(localStorage.getItem("zoom")) || (heightPortion > 1 ? heightPortion : 1)
@@ -104,6 +106,7 @@
                     image.style.left = 0
                     image.style.top = 0
                     image.style.width = "100%"
+                    // set time out for image to finish loading into html
                     setTimeout(() => {
                         const heightPortion = bannerContainer.clientHeight / image.clientHeight
                         initialZoom(heightPortion > 1 ? heightPortion : 1)
