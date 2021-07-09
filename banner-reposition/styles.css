@@ -7,14 +7,14 @@ body {
     padding: 10px;
 }
 
-
 .banner {
-    border: 4px solid cadetblue;
-    border-radius: 10px;
+    border: 2px solid cadetblue;
+    border-radius: 5px;
     overflow: hidden;
     width: 800px;
     height: 500px;
     box-sizing: border-box;
+    position: relative;
 }
 
 .banner__container {
@@ -25,7 +25,7 @@ body {
 
 .banner__image {
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
     object-fit: contain;
     z-index: 0;
     transition: scale .3s ease;
@@ -34,9 +34,63 @@ body {
 }
 
 input {
-    margin: 20px 0;
+    margin: 20px;
+}
+ 
+.buttons {
+    margin: 20px ;
 }
 
-.buttons button {
-    margin: 30px 30px 0 0 ;
+.function-buttons button {
+    margin-right: 20px;
+}
+
+button {
+    border: none;
+    padding: 8px 15px;
+    cursor: pointer;
+    background-color: #dbdbdb;
+}
+
+button:not[disabled]:hover {
+    background-color: #acacac;
+}
+
+.zoom-button {
+    font-size: 16px;
+    color: #000000;
+}
+
+.zoom-button[disabled] {
+    cursor: not-allowed;
+    color: #acacac;
+}
+
+.spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.spinner-circle{
+    border: 7px solid #1bc0b2;
+    border-bottom: 7px solid transparent;
+    border-top: 5px solid transparent;
+    width: 60px;
+    height: 60px;
+    display: none;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.spinner-circle.show {
+    display: block;
+}
+
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
 }

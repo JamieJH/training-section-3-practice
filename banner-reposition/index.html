@@ -1,28 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- this meta is neccessary to prevent 403 error from imgur if we are accessing from 127.0.0.1 -->
+    <meta name="referrer" content="no-referrer">
     <title>Banner Reposition</title>
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" />
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
 
-    <div class="banner disabled">
+    <div class="banner">
         <div class="banner__container">
             <img class="banner__image" id="uploaded-img" draggable="false" alt="banner">
         </div>
+        <div class="spinner">
+            <div class="spinner-circle"></div>
+        </div>
+    </div>
+
+    
+
+    <div class="buttons zoom-buttons">
+        <button class="zoom-button" id="zoom-out" disabled>
+            <i class="fas fa-search-minus"></i>
+        </button>
+        <button class="zoom-button" id="zoom-in" disabled>
+            <i class="fas fa-search-plus"></i>
+        </button>
     </div>
 
     <input type="file" value="upload image" accept="image/*">
-    
-    <div class="buttons">
+
+    <div class="buttons function-buttons">
         <button id="save">Save</button>
         <button id="reposition">Reposition</button>
     </div>
-    
+
     <script src="script.js"></script>
 </body>
+
 </html>
