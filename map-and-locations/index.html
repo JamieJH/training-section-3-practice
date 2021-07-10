@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map and marker using MapboxAPI</title>
+
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.14.0/css/all.min.css" />
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id='map'></div>
+
+    <div class="functionality-container">
+        <div class="buttons">
+            <button class="btn-clear">Clear and Go back</button>
+            <button class="btn-directions">Enable Directions</button>
+            <button class="btn-clear-route">Clear Route</button>
+        </div>
+        <form id="location-search">
+            <div class="form-input">
+                <label for="location"><i class="fas fa-search"></i></label>
+                <input type="text" id="location" autocomplete="off" list="locations" placeholder="Search a place...">
+            </div>
+            <!-- <datalist id="locations"></datalist> -->
+            <ul id="search-results"></ul>
+        </form>   
+        
+    </div>   
+
+    <button class="btn-help">?</button>
+    <div class="instructions-modal">
+        <div class="instructions-backdrop"></div>
+        <div class="instructions-content">
+            <button class="btn-close-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <ul>
+                <li>Search Engine needs at least 5 characters to start searching.</li>
+                <li>Clicking a point on the map that is not a Marker will create a new marker at that point</li>
+                <li>To get a route between 2 points, Enable Directions and select the <em><strong>markers</strong></em> of those points.</li>
+                <li>
+                    When a Route is already visible, choosing another Marker will create a route from the most 
+                    recent chosen Marker to that Marker.
+                </li>
+                <li>
+                    When a Route is already visible, choosing one of the same Markers will remove that Marker
+                    from the selected points. At this point, selecting another Marker will create a route between
+                    the remaining point and that Marker.
+                </li>
+            </ul>
+            
+        </div>
+    </div>
+
+    <div class="directions-info">
+        <h3>Directions (Driving)</h3>
+        <p id="duration"></p>
+        <p id="distance"></p>
+    </div>
+
+
+
+    <!-- mapbox directions -->
+    <script
+        src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.js"></script>
+    <link rel="stylesheet"
+        href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.0/mapbox-gl-directions.css"
+        type="text/css">
+
+    <!-- project scripts -->
+    <script src="script.js"></script>
+</body>
+
+</html>
