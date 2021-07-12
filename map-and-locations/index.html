@@ -27,6 +27,7 @@
             <div class="form-input">
                 <label for="location"><i class="fas fa-search"></i></label>
                 <input type="text" id="location" autocomplete="off" list="locations" placeholder="Search a place...">
+                <button class="btn-clear-input" type="button"><i class="fas fa-times"></i></button>
             </div>
             <!-- <datalist id="locations"></datalist> -->
             <ul id="search-results"></ul>
@@ -42,9 +43,10 @@
                 <i class="fas fa-times"></i>
             </button>
             <ul>
-                <li>Search Engine needs at least 5 characters to start searching.</li>
+                <li>Search Engine needs at least 3 characters to start searching.</li>
                 <li>Clicking a point on the map that is not a Marker will create a new marker at that point</li>
                 <li>To get a route between 2 points, Enable Directions and select the <em><strong>markers</strong></em> of those points.</li>
+                <li>Markers selected to get directions are colored blue</li>
                 <li>
                     When a Route is already visible, choosing another Marker will create a route from the most 
                     recent chosen Marker to that Marker.
@@ -59,11 +61,7 @@
         </div>
     </div>
 
-    <div class="directions-info">
-        <h3>Directions (Driving)</h3>
-        <p id="duration"></p>
-        <p id="distance"></p>
-    </div>
+    <div class="status-box"></div>
 
 
 
