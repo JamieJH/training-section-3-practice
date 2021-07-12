@@ -17,14 +17,15 @@
     const progressBars = storyCarousel.querySelector(".progress-bar-container")
 
     // Auto Slide variables
-    const SLIDE_INTERVAL = 6000         // time between each slide (for auto sliding)
-    let slideIntervalId;                // id of setInterval that before moving to the next slide
-    let slideTimeoutId;                 // id of setTimeout to slide the remaining time after stop
-    let fillProgressBarIntervalId;      // id of setInterval to fill progress bar during SLIDE_INTERVAL
-    let currentBarIndex = 0;            // index of the progres bar to be filled
-    let currentInnerWidth = 0;          // filled width of the current progress bar
-    let isAutoPlaying = false;           // true is auto play is on
-    let timePassed = 0;                 // time passed since the start of slide when user pause auto play
+    const DEFAULT_SLIDE_INTERVAL = 6000     // time between each slide (for auto sliding)
+    let currentSlideDuration                // time duration for the current slide
+    let slideIntervalId;                    // id of setInterval that before moving to the next slide
+    let slideTimeoutId;                     // id of setTimeout to slide the remaining time after stop
+    let fillProgressBarIntervalId;          // id of setInterval to fill progress bar during SLIDE_INTERVAL
+    let currentBarIndex = 0;                // index of the progres bar to be filled
+    let currentInnerWidth = 0;              // filled width of the current progress bar
+    let isAutoPlaying = false;              // true is auto play is on
+    let timePassed = 0;                     // time passed since the start of slide when user pause auto play
 
     // set up story select input
     function setupStorySelect() {
@@ -87,12 +88,12 @@
             Your browser does not support the video tag.`
         }
 
+        slideContainer.setAttribute("id", slideInfo.id)
         slideContainer.appendChild(media)
         storyContainer.appendChild(slideContainer)
         if (storyFiles[storyTitle].length === 1) {
             const endSlide = document.getElementById("story-end")
             endSlide.before(storyContainer)
-            // track.insertBefore(storyContainer, storyContainer.childNodes[storyContainer.childNodes.length-1])
         }
     }
 
@@ -115,13 +116,13 @@
     function startAutoSlide(startWidth = 0) {
         if (!isAutoPlaying) {
             isAutoPlaying = true
-            const timeLeft = SLIDE_INTERVAL - timePassed
+            const timeLeft = currentSlideDuration - timePassed
             fillRunningBar(Array.from(progressBars.children)[currentBarIndex], startWidth)
 
-            if (timeLeft !== SLIDE_INTERVAL) {
+            if (timeLeft !== currentSlideDuration) {
                 slideTimeoutId = setTimeout(() => slideUsingButtons(true), timeLeft)
             }
-            slideIntervalId = setInterval(() => slideUsingButtons(true), 6000)
+            slideIntervalId = setInterval(() => slideUsingButtons(true), currentSlideDuration)
 
             // if active slide contain a video, play it
             toggleVideo(storyCarousel.querySelector(".user-story__slide.active > video"), true)
@@ -160,7 +161,7 @@
 
         fillProgressBarIntervalId = setInterval(() => {
             // the amount of px being added to running bar width every 100s
-            const changeAmountPer100s = progressBar.offsetWidth * 100 / 6000 + 0.03
+            const changeAmountPer100s = progressBar.offsetWidth * 50 / currentSlideDuration + 0.02
             if (currentInnerWidth <= progressBar.offsetWidth) {
                 currentInnerWidth += changeAmountPer100s
                 progressBar.querySelector(".inner-bar").style.width = currentInnerWidth + "px"
@@ -169,8 +170,8 @@
                 currentInnerWidth = 0
                 clearInterval(fillProgressBarIntervalId)
             }
-            timePassed += 100
-        }, 100)
+            timePassed += 50
+        }, 50)
     }
 
 
@@ -221,6 +222,12 @@
         toggleActiveClass(currentStory, storyContainer)
         toggleActiveClass(storyCarousel.querySelector(".user-story__slide.active"), targetSlide)
         timePassed = 0
+
+        currentSlideDuration = DEFAULT_SLIDE_INTERVAL
+        if (!targetSlide.classList.contains("end")) {
+            const [storyTitle, slideIndex] = targetSlide.getAttribute('id').split('_')
+            currentSlideDuration = storyFiles[storyTitle][slideIndex].duration
+        }
         startAutoSlide()
     }
 
@@ -295,6 +302,9 @@
             storyFiles[enteredStoryTitle] = []        // initialise an array
         }
 
+        // index at which files will be added, if story is new, lastIndex = 0
+        let lastIndex = storyFiles[enteredStoryTitle].length
+
         Array.from(fileInput.files).every(file => {
             // if file size > 5MB
             if (file.size > 20 * 1024 * 1024) {
@@ -303,12 +313,15 @@
                 return false
             }
             const newSlide = {
+                id: enteredStoryTitle + "_" + lastIndex,
                 name: file.name,
                 src: URL.createObjectURL(file),
-                type: file.type.split("/")[0]
+                type: file.type.split("/")[0],
+                duration: 1000 * (Math.floor(Math.random() * 6) + 5)     // randomly set duration from 5s - 10s
             }
             storyFiles[enteredStoryTitle].push(newSlide)
             createStorySlide(enteredStoryTitle, newSlide)
+            lastIndex++
             return true
         })
 
