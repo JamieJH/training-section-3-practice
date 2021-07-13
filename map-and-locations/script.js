@@ -169,6 +169,16 @@
             <p>Something went wrong. Please try again later!</p>`
     }
 
+    function displayStatusBox(isError, duration, distance) {
+        statusBox.classList.add("show")
+        statusBox.innerHTML = (!isError) ?
+            `<h3>Directions (Driving)</h3>
+            <p>Distance: ${distance.km}km ${distance.meters}m</p>
+            <p>Duration: ${duration.hours} hour(s) ${duration.minutes} minute(s)</p>` :
+            `<h3>Error</h3>
+            <p>Something went wrong. Please try again later!</p>`
+    }
+
     function findDirections() {
         const coordinatesString = directionsEndPoints.map(point => point.coordinates.join(",")).join(";")
         fetch(`${URL}/directions/v5/mapbox/driving/${coordinatesString}?geometries=geojson&access_token=${ACCESS_TOKEN}`)
