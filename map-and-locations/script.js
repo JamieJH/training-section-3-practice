@@ -7,20 +7,19 @@
     const clearBtn = document.querySelector(".btn-clear")
     const directionsBtn = document.querySelector(".btn-directions")
     const clearRouteBtn = document.querySelector(".btn-clear-route")
-
+    const clearInputBtn = document.querySelector(".btn-clear-input")
     const instructionsModal = document.querySelector(".instructions-modal")
-    const modalBackdrop = instructionsModal.querySelector(".instructions-backdrop")
-    const directionsInfoCard = document.querySelector(".directions-info")
+    const statusBox = document.querySelector(".status-box")
     const mapContainer = document.getElementById("map")
-    const locationTypes = ['locality', 'place', 'region', 'country', 'postcode']
     let map;
     let isDirectionEnabled = false;
-    let searchResults = {}          // object to store at most 5 search results
-    let markersInfo = []            // array to store markers as regular objects similar to a search result (except the original center)
-    let markerPoints = []           // array to store markers as map marker objs (except the original center)
-    let directionsEndPoints = []    // store 2 points to show directions between them
-    let isInstructionOpen = false   // true ì the instructions modal is visible (open)
-    let markerClicked = false       // true if a marker is clicked
+    let searchResults = {}              // object to store at most 5 search results
+    const markersInfo = []              // array to store markers as regular objects similar to a search result (except the original center)
+    const directionsEndPoints = []      // store 2 points (markerInfo obj) to show directions between them
+    let markerPoints = {}               // array to store markers as map marker objs (except the original center)
+    let isInstructionOpen = false       // true if the instructions modal is visible (open)
+    let markerClicked = false           // true if a marker is clicked
+    let debounceId                      // setTimout id to debounce input location search
 
     // coordinates to create a bounding box to limit search zone, the box corners are:
     // top left: (minX, maxY); top right: (max, max); bottom left: (min, min), bottom right: (maxX, miY)
@@ -33,6 +32,7 @@
 
     // default marker if user refuse to allow location
     let originalMarker = {
+        id: "original",
         name: "Journey Horizon",
         coordinates: [106.6781463, 10.7643486],
         address: {
@@ -45,25 +45,37 @@
         },
     }
 
-
     mapboxgl.accessToken = ACCESS_TOKEN
 
-    // get current location
-    navigator.geolocation.getCurrentPosition(successLocation, errorLocation, { enableHighAccuracy: true })
-
-    function successLocation(location) {
-        originalMarker.coordinates = [location.coords.longitude, location.coords.latitude]
-        originalMarker.name = "Your Location"
-        originalMarker.address = ''
-        setupMap([location.coords.longitude, location.coords.latitude])
+    const getUserPosition = () => {
+        return new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject)
+        })
     }
 
-    function errorLocation() {
-        setupMap(originalCenter)
+    getUserPosition()
+        .then((position) => {       // user allow location
+            setOriginalLocation(true, [position.coords.longitude, position.coords.latitude])
+        })
+        .catch(() => setOriginalLocation())
+
+    function setOriginalLocation(isAvailable = false, coordinates = null) {
+        if (isAvailable) {
+            originalMarker.coordinates = coordinates
+            originalMarker.name = "Your Location"
+            originalMarker.address = ''
+        }
+        setupMap()
     }
 
-    function populateResultList() {
+    function populateResultList(isError = false) {
         resultList.innerHTML = ""
+        if (isError || Object.keys(searchResults).length === 0) {
+            const li = document.createElement("li")
+            li.innerText = isError ? "Something went wrong. Please try again later!" : "No result found!"
+            resultList.append(li)
+            return
+        }
         for (const placeId in searchResults) {
             const li = document.createElement("li")
             li.setAttribute("id", placeId)
@@ -84,7 +96,7 @@
         })
 
         return {
-            id: feature.id,
+            id: "location-" + feature.id.split(".")[1],
             name: feature.text,
             coordinates: feature.center,
             address: address
@@ -97,33 +109,30 @@
                 if (res.status === 200 || res.ok) {
                     return res.json()
                 }
-                else {
-                    console.log("Fetch error");
-                }
+                populateResultList(isError = true)
             })
             .then(data => {
                 searchResults = {}
-                const places = data.features
-                places.forEach(place => {
-                    searchResults[place.id] = featureToLocation(place)
+                data.features.forEach(place => {
+                    const id = place.id.split(".")[1]
+                    searchResults[id] = featureToLocation(place)
                 })
                 populateResultList()
             })
-            .catch(err => console.log(err))
+            .catch(() => populateResultList(isError = true))
     }
 
     function removeRoute() {
         if (map.getLayer('route')) {
             map.removeLayer('route')
             map.removeSource('route')
+            statusBox.classList.remove("show")
         }
     }
 
     function drawRoute(coordinates) {
         // if there's already a route, remove it
-        if (map.getSource('route')) {
-            removeRoute()
-        }
+        removeRoute()
         map.addSource('route', {
             'type': 'geojson',
             'data': {
@@ -148,44 +157,83 @@
                 'line-width': 8
             }
         });
+    }
 
+    function displayStatusBox(isError, duration, distance) {
+        statusBox.classList.add("show")
+        statusBox.innerHTML = (!isError) ?
+            `<h3>Directions (Driving)</h3>
+            <p>Distance: ${distance.km}km ${distance.meters}m</p>
+            <p>Duration: ${duration.hours} hour(s) ${duration.minutes} minute(s)</p>` :
+            `<h3>Error</h3>
+            <p>Something went wrong. Please try again later!</p>`
     }
 
     function findDirections() {
-        const coordinatesString = directionsEndPoints.map(coors => coors.join(",")).join(";")
+        const coordinatesString = directionsEndPoints.map(point => point.coordinates.join(",")).join(";")
         fetch(`${URL}/directions/v5/mapbox/driving/${coordinatesString}?geometries=geojson&access_token=${ACCESS_TOKEN}`)
             .then(res => {
                 if (res.status === 200 || res.ok) {
                     return res.json()
                 }
-                else {
-                    console.log("Fetch error");
-                }
+                displayStatusBox(true, null, null)
             })
             .then(data => {
                 const coordinates = data.routes[0].geometry.coordinates
                 const duration = data.routes[0].duration    // time in seconds
                 const distance = Math.floor(data.routes[0].distance)    // distance in meters
 
-                // get time in format: N hours M minutes
                 const hours = Math.floor(duration / 3600)
                 const minutes = Math.floor((duration % 3600) / 60)
-
-                // get distance in format: X km Y m
                 const km = Math.floor(distance / 1000)
                 const meters = distance % 1000
 
                 drawRoute(coordinates)
-                directionsInfoCard.classList.add("show")
-                directionsInfoCard.querySelector("#duration").innerHTML = `Duration: ${hours} hour(s) ${minutes} minute(s)`
-                directionsInfoCard.querySelector("#distance").innerHTML = `Distance: ${km}km ${meters}m`
-
+                displayStatusBox(false, { hours, minutes }, { km, meters })
             })
-            .catch(err => console.log(err))
+            .catch(() => displayStatusBox(true))
     }
 
-    function addMarker(markerInfo, isOriginal = false) {
+    function addPointAndFindDirections(markerInfo) {
+        if (directionsEndPoints.length === 2) {
+            const firstMarker = directionsEndPoints.shift()   // remove the first item
+            markerPoints[firstMarker.id].getElement().classList.remove("selected")
+        }
+
+        directionsEndPoints.push(markerInfo)
+        const markerElement = document.querySelector(".marker#" + markerInfo.id)
+        markerElement.classList.add("selected")
+        if (directionsEndPoints.length === 2) {
+            findDirections()
+        }
+    }
+
+    function removeMarkerById(markerId) {
+        markerPoints[markerId].remove()
+        delete markerPoints[markerId]
+
+        // remove route if the marker is part of a route
+        const index = directionsEndPoints.findIndex(point => markerId === point.id)
+        if (index !== -1) {
+            removeRoute()
+            directionsEndPoints.splice(index, 1)
+        }
+    }
+
+    function removeAllMarkers() {
+        Object.values(markerPoints).forEach(marker => marker.remove())
+        markerPoints = {}
+        markersInfo.length = 0
+        removeRoute()
+        directionsEndPoints.length = 0
+    }
+
+    function addMarker(markerInfo) {
         markerClicked = false
+        // if directions is disabled, user can only have one active marker at a time
+        if (!isDirectionEnabled) {
+            removeAllMarkers()
+        }
         const address = markerInfo.address
         const marker = {
             type: 'Feature',
@@ -222,46 +270,46 @@
                 <p>Location: ${marker.properties.location}</p>
                 <p>Latitude: ${marker.geometry.coordinates[1]};</p> 
                 <p>Longitude: ${marker.geometry.coordinates[0]};</p>
+                <button class="btn-remove-marker" for=${markerInfo.id}>Remove marker</button>
             `))
             .addTo(map);
+
+        if (isDirectionEnabled) {
+            addPointAndFindDirections(markerInfo)
+        }
 
         // on clicing a marker, if directionsEndPoints has 2 points, show a route between then
         markerPoint.getElement().addEventListener("click", () => {
             if (isDirectionEnabled) {
                 // if marker is already in directionsEndPoints, remove it and remove the route
-                const index = directionsEndPoints.findIndex(coordinates => {
-                    return markerInfo.coordinates[0] === coordinates[0] && markerInfo.coordinates[1] === coordinates[1]
+                const index = directionsEndPoints.findIndex(point => {
+                    return markerInfo.coordinates[0] === point.coordinates[0] && markerInfo.coordinates[1] === point.coordinates[1]
                 })
 
                 if (index !== -1) {
+                    document.getElementById(directionsEndPoints[index].id).classList.remove("selected")
                     directionsEndPoints.splice(index, 1)
                     removeRoute()
                 }
                 else {
-                    if (directionsEndPoints.length === 2) {
-                        directionsEndPoints.shift()   // remove the first item
-                    }
-                    directionsEndPoints.push(markerInfo.coordinates)
-                    if (directionsEndPoints.length === 2) {
-                        findDirections()
-                    }
+                    addPointAndFindDirections(markerInfo)
                 }
             }
             markerClicked = true
         })
 
-        if (!isOriginal) {
-            markersInfo.push(markerInfo)
-            markerPoints.push(markerPoint)
-        }
-
+        markersInfo.push(markerInfo)
+        markerPoints[markerInfo.id] = markerPoint
     }
 
-    // search for location once user has entered at least 5 letters
+    // search for location once user has entered at least 3 letters
     locationInput.addEventListener("input", (e) => {
+        clearTimeout(debounceId)
         resultList.classList.add("show")
-        if (e.target.value.length >= 5) {
-            locationSearch(e.target.value)
+        if (e.target.value.length >= 3) {
+            debounceId = setTimeout(() => {
+                locationSearch(e.target.value)
+            }, 1000)
         }
     })
 
@@ -271,22 +319,20 @@
             const placeId = e.target.getAttribute("id")
             addMarker(searchResults[placeId])
             resultList.classList.remove("show")
+            locationInput.value = e.target.innerText
         }
     })
 
+
     // clear all markers, directions and center back to the original center
     clearBtn.addEventListener("click", () => {
-        // center on to the original center
-        map.flyTo({
-            center: originalMarker.coordinates
-        })
+        removeAllMarkers()
+        addMarker(originalMarker)
+    })
 
-        // remove all markers (except for the original)
-        markersInfo.length = 0
-        markerPoints.forEach(point => point.remove())
-        removeRoute()
-        directionsEndPoints.length = 0
-        directionsInfoCard.classList.remove("show")
+    // clear input
+    clearInputBtn.addEventListener("click", () => {
+        locationInput.value = ""
     })
 
     // toggle direction button to start looking for a route between 2 points
@@ -304,45 +350,43 @@
 
     // clear all routes button, also clear the directionsEndPoints array
     clearRouteBtn.addEventListener("click", () => {
+        directionsEndPoints.forEach(point => {
+            document.getElementById(point.id).classList.remove("selected")
+        })
         directionsEndPoints.length = 0
         removeRoute()
     })
 
+    // remove marker when clicing on the remove marker button on the popup
+    mapContainer.addEventListener("click", (e) => {
+        if (e.target.className === "btn-remove-marker") {
+            removeMarkerById(e.target.getAttribute("for"))
+        }
+    })
+
     // function to display or hide the instruction modal
     function toggleInstructions(isOn) {
-        isInstructionOpen = isOn
-        if (isInstructionOpen) {
-            instructionsModal.classList.add("show")
-        }
-        else {
-            instructionsModal.classList.remove("show")
-        }
+        isInstructionOpen = isOn;
+        isInstructionOpen ? instructionsModal.classList.add("show") : instructionsModal.classList.remove("show")
     }
-
 
     // the instruction modal will appear upon clicking the help button, click it again to close modal
     helpBtn.addEventListener("click", () => toggleInstructions(!isInstructionOpen))
     instructionsModal.querySelector(".btn-close-modal").addEventListener("click", () => toggleInstructions(false))
     instructionsModal.querySelector(".instructions-backdrop").addEventListener("click", () => toggleInstructions(false))
 
-    function setupMap(center) {
+    function setupMap() {
         map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: center,
+            center: originalMarker.coordinates,
             zoom: 11,
         });
 
         // set the bounds of the map [[southwest coordinates], [northeast coordinates]]
-        var bounds = [[BBOX.minX - 0.1, BBOX.minY - 0.1], [BBOX.maxX + 0.1, BBOX.maxY + 0.1]];
-        map.setMaxBounds(bounds);
-
-        // add marker for original center
-        addMarker(originalMarker, true)
-
-        // Add zoom and rotation controls to the map.
-        const navigationControl = new mapboxgl.NavigationControl()
-        map.addControl(navigationControl);
+        map.setMaxBounds([[BBOX.minX - 0.1, BBOX.minY - 0.1], [BBOX.maxX + 0.1, BBOX.maxY + 0.1]]);
+        map.addControl(new mapboxgl.NavigationControl());   // Add zoom and rotation controls
+        addMarker(originalMarker)                           // add marker for original center
 
         map.on('click', (e) => {
             // when a user click is not on a marker, create a marker of that point
@@ -354,14 +398,12 @@
                         if (res.status === 200 || res.ok) {
                             return res.json()
                         }
-                        else {
-                            console.log("Fetch Error: Unable to get location from coordinates");
-                        }
+                        displayStatusBox(true, null, null)
                     })
                     .then(data => {
                         const featureCoors = data.features[0].geometry.coordinates
                         let location = {
-                            id: Math.random().toString(),
+                            id: "location-" + Math.random().toString().split(".")[1],
                             name: 'Clicked Location',
                             coordinates: clickedCoors,
                             address: { full: 'NO_NEAREST_ADDRESS' }
@@ -372,10 +414,11 @@
                         if (Math.abs(clickedCoors[0] - featureCoors[0]) <= 0.03 && Math.abs(clickedCoors[1] - featureCoors[1]) <= 0.03) {
                             location = featureToLocation(data.features[0])
                         }
+                        statusBox.classList.remove("show")
 
                         addMarker(location)
-
                     })
+                    .catch(() => displayStatusBox(true, null, null))
             }
             markerClicked = false
         })
