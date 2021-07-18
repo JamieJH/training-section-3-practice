@@ -14,8 +14,8 @@
 
     let isEditing = false
     let isMouseDown = false
-    let offset = [0, 0]     // x, y
-    let mousePos
+    let offsetXY = [0, 0]
+    let mousePosition
 
     // set initial img, zoom level and position taken from local storage (if available)
     const initialPosition = localStorage.getItem("position") || "0,0"
@@ -47,8 +47,7 @@
         }
     }
 
-    // function to zoom image when it is just uploaded to fit the container
-    function initialZoom(level) {
+    function initialZoomToFitContainer(level) {
         console.log(level);
         zoom_min = level
         zoomLevel = zoom_min
@@ -62,11 +61,10 @@
     setTimeout(() => {
         const heightPortion = bannerContainer.clientHeight / image.clientHeight
         zoomLevel = parseFloat(localStorage.getItem("zoom")) || (heightPortion > 1 ? heightPortion : 1)
-        initialZoom(zoomLevel)
+        initialZoomToFitContainer(zoomLevel)
     }, 200);
 
 
-    // Upload File
     fileInput.addEventListener("change", (e) => {
         if (e.target.files && e.target.files[0]) {
             spinner.classList.add("show")
@@ -109,7 +107,7 @@
                     // set time out for image to finish loading into html
                     setTimeout(() => {
                         const heightPortion = bannerContainer.clientHeight / image.clientHeight
-                        initialZoom(heightPortion > 1 ? heightPortion : 1)
+                        initialZoomToFitContainer(heightPortion > 1 ? heightPortion : 1)
                         spinner.classList.remove("show")
                     }, 500)
                 })
@@ -121,9 +119,7 @@
     //  Reposition using mouse movement
     image.addEventListener("mousedown", (e) => {
         isMouseDown = true
-        // e.clientX : mouse down z position relative to the html page
-        // mage.offsetLeft: position of the image relative to the html page
-        offset = [image.offsetLeft - e.clientX, image.offsetTop - e.clientY]
+        offsetXY = [image.offsetLeft - e.clientX, image.offsetTop - e.clientY]
     })
 
     image.addEventListener("mouseup", () => {
@@ -136,14 +132,14 @@
 
     image.addEventListener("mousemove", (e) => {
         if (isMouseDown && isEditing) {
-            mousePos = [e.clientX, e.clientY]
-            const newLeft = mousePos[0] + offset[0]
-            const newTop = mousePos[1] + offset[1]
+            mousePosition = [e.clientX, e.clientY]
+            const newLeft = mousePosition[0] + offsetXY[0]
+            const newTop = mousePosition[1] + offsetXY[1]
             if (newLeft <= 0 && newLeft >= bannerContainer.clientWidth - image.clientWidth) {
-                image.style.left = mousePos[0] + offset[0] + 'px'
+                image.style.left = mousePosition[0] + offsetXY[0] + 'px'
             }
             if (newTop <= 0 && newTop >= bannerContainer.clientHeight - image.clientHeight) {
-                image.style.top = mousePos[1] + offset[1] + 'px'
+                image.style.top = mousePosition[1] + offsetXY[1] + 'px'
             }
         }
     })
@@ -167,13 +163,11 @@
         toggleReposition(isEditing)
     })
 
-    // save current position and zoom status in localstorage when click save
     saveBtn.addEventListener("click", () => {
         localStorage.setItem("position", [image.offsetLeft, image.offsetTop])
         localStorage.setItem("zoom", zoomLevel)
         localStorage.setItem("image-source", image.src)
 
-        // turn off reposition
         toggleReposition(false)
     })
 
